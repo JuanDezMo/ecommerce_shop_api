@@ -24,6 +24,8 @@ El backend ya cubre todas las pantallas del MVP: catálogo, registro, login, per
 - Swagger UI en `/swagger-ui.html`, con el botón *Authorize* para pegar el token.
 - Especificación OpenAPI en `/v3/api-docs`, útil para generar clientes HTTP de Kotlin y Swift.
 - Contratos JSON (draft-04) de cada respuesta en [`docs/contracts/`](docs/contracts/).
+- IDs de accesibilidad comunes a iOS y Android en el [catálogo de IDs](catalogo-ids-accesibilidad.md).
+- **Idioma de la UI:** inglés. Los textos sugeridos en esta guía están en inglés.
 
 ## Autenticación y sesión
 
@@ -31,7 +33,7 @@ La app obtiene un token con el login y lo envía en cada ruta protegida como `Au
 
 - **Duración:** `expiresIn` en segundos. 900 (15 min) con el perfil `testing`, 3600 (1 h) en los demás.
 - **Contenido del JWT (HS256):** `sub` (id del usuario), `email`, `iat`, `exp`. La app no necesita decodificarlo: el perfil se pide a `/users/me`.
-- **Sin sesión en el servidor:** no hay cookies; guarda el token en el almacenamiento seguro (Keychain en iOS, EncryptedSharedPreferences o DataStore cifrado en Android).
+- **Sin sesión en el servidor:** no hay cookies. Lo recomendable es guardar el token en el almacenamiento seguro (Keychain en iOS, EncryptedSharedPreferences o DataStore cifrado en Android). En su primera fase, la app iOS lo mantiene solo en memoria: al cerrarla hay que volver a iniciar sesión.
 - **Logout:** solo local (borrar el token). El servidor no revoca tokens.
 
 | Rutas | Token |
@@ -43,10 +45,10 @@ La app obtiene un token con el login y lo envía en cada ruta protegida como `Au
 
 | `code` | Significa | Acción en la app |
 | --- | --- | --- |
-| `AUTH_TOKEN_MISSING` | No se envió el token | Error de programación: revisar el interceptor |
+| `AUTH_TOKEN_MISSING` | No se envió el token | Error de programación: revisar el interceptor. Volver al login sin el aviso de sesión expirada |
 | `AUTH_TOKEN_MALFORMED` | El valor no es un JWT | Borrar el token e ir al login |
 | `AUTH_TOKEN_INVALID` | Firma inválida o el usuario ya no existe | Borrar el token e ir al login |
-| `AUTH_TOKEN_EXPIRED` | La sesión venció | Borrar el token e ir al login con el mensaje "Tu sesión expiró" |
+| `AUTH_TOKEN_EXPIRED` | La sesión venció | Borrar el token e ir al login con el mensaje "Your session has expired. Please log in again." |
 
 Centraliza este manejo en la capa de red (un interceptor de OkHttp/Ktor o de `URLSession`). Si más adelante se añade refresh token, solo cambiará esa pieza.
 
@@ -70,7 +72,7 @@ Centraliza este manejo en la capa de red (un interceptor de OkHttp/Ktor o de `UR
   "description": "Over-ear bluetooth headphones", "price": 59.99, "stock": 10, "imageKey": "headphones" }
 ```
 
-`stock` = 0 significa agotado: deshabilita el botón "Añadir al carrito" y muestra la etiqueta "Agotado".
+`stock` = 0 significa agotado: deshabilita el botón "Add to cart" y muestra la etiqueta "Sold out".
 
 ### Registro: reglas de cada control del formulario
 
@@ -124,49 +126,49 @@ Todo error (4xx y 5xx) llega con el mismo formato, así que basta con un único 
 ```
 
 - **`fieldErrors`** solo trae elementos con `VALIDATION_ERROR`; en el resto es `[]`. Muestra cada uno debajo de su control usando `field` (`email`, `shipping.city`, `items[0].quantity`). Un campo puede tener dos mensajes.
-- **`message`** está en inglés y es fijo. Úsalo para logs o como respaldo; los textos de la UI van en el idioma de la app, mapeados desde `code`.
+- **`message`** está en inglés, es fijo y técnico. Úsalo solo para logs: el texto que ve el usuario sale de la tabla siguiente, mapeado desde `code`.
 - **`VALIDATION_ERROR` con `fieldErrors` vacío** y `message` `Malformed JSON request` indica un body mal construido por la app: es un error de programación, no del usuario.
 
-| `code` | HTTP | Mensaje sugerido en la UI |
-| --- | --- | --- |
-| `VALIDATION_ERROR` | 400 | Errores debajo de cada campo |
-| `INVALID_CREDENTIALS` | 401 | "Email o contraseña incorrectos" |
-| `USER_LOCKED` | 423 | "Tu cuenta está bloqueada" |
-| `EMAIL_ALREADY_EXISTS` | 409 | "Ese email ya está registrado" (en el campo email) |
-| `UNDERAGE_USER` | 422 | "Debes ser mayor de 18 años" (en el DatePicker) |
-| `TERMS_NOT_ACCEPTED` | 422 | "Debes aceptar los términos" (en el checkbox) |
-| `PRODUCT_NOT_FOUND` | 404 | "Este producto ya no está disponible" |
-| `INSUFFICIENT_STOCK` | 409 | "No hay stock suficiente de [producto]" |
-| `EMPTY_ORDER` | 400 | "Tu carrito está vacío" |
-| `DUPLICATE_ORDER_ITEM` | 400 | Error de la app: agrupa cantidades por producto |
-| `ORDER_NOT_FOUND` | 404 | "No encontramos esta orden" |
-| `AUTH_TOKEN_*` | 401 | Ver *Autenticación y sesión* |
-| `METHOD_NOT_ALLOWED`, `UNSUPPORTED_MEDIA_TYPE`, `NOT_FOUND` | 405, 415, 404 | Error de la app (método, `Content-Type: application/json` o ruta) |
-| `INTERNAL_ERROR` | 500 | "Algo salió mal, inténtalo de nuevo" |
-| `FORCED_ERROR` | El de la cabecera | Solo en pruebas (ver *Utilidades del perfil testing*): mostrar la pantalla de error genérica |
+| `code` | HTTP | Mensaje para el usuario (UI en inglés) | Dónde se muestra |
+| --- | --- | --- | --- |
+| `VALIDATION_ERROR` | 400 | "Some fields need your attention." + los `fieldErrors`, uno debajo de cada campo | Resumen y en el formulario |
+| `INVALID_CREDENTIALS` | 401 | "The email or password is incorrect." | Login |
+| `USER_LOCKED` | 423 | "Your account is locked. Please contact support." | Login |
+| `EMAIL_ALREADY_EXISTS` | 409 | "An account with this email already exists." | Campo email |
+| `UNDERAGE_USER` | 422 | "You must be at least 18 years old to register." | Campo fecha de nacimiento |
+| `TERMS_NOT_ACCEPTED` | 422 | "You must accept the terms and conditions." | Checkbox de términos |
+| `PRODUCT_NOT_FOUND` | 404 | "This product is no longer available." | Detalle o checkout |
+| `INSUFFICIENT_STOCK` | 409 | "Some products in your cart don't have enough stock. Please update the quantities." | Checkout (y refrescar el stock) |
+| `EMPTY_ORDER` | 400 | "Your cart is empty." | Checkout |
+| `DUPLICATE_ORDER_ITEM` | 400 | "We couldn't process your cart. Please try again." (es un error de la app: agrupa cantidades por producto) | Checkout |
+| `ORDER_NOT_FOUND` | 404 | "We couldn't find this order." | Detalle de orden |
+| `AUTH_TOKEN_*` | 401 | Ver *Autenticación y sesión* | Login |
+| `METHOD_NOT_ALLOWED`, `UNSUPPORTED_MEDIA_TYPE`, `NOT_FOUND` | 405, 415, 404 | "Something went wrong. Please try again." (es un error de la app: método, `Content-Type` o ruta) | Alerta |
+| `INTERNAL_ERROR` y cualquier 5xx | 500+ | "Something went wrong on our side. Please try again later." | Alerta |
+| `FORCED_ERROR` | El de la cabecera | El mensaje genérico de su familia (4xx o 5xx) | Alerta |
 
-Los mensajes con un id lo incluyen (`Insufficient stock for product 5`), pero la app ya sabe qué producto envió: no hace falta interpretar el texto.
+Los mensajes con un id lo incluyen (`Insufficient stock for product 5`), pero no se interpretan: con varios productos en el pedido, el mensaje general y un refresco del stock bastan para que el usuario vea qué ajustar.
 
 ## Manejo de imágenes
 
 El backend no sirve imágenes ni URLs: cada producto trae un `imageKey` y cada app lleva las imágenes empaquetadas, buscadas por esa clave. Es una decisión del MVP (servir imágenes queda para la fase 2).
 
-| `imageKey` | Producto | Recurso en Android (`res/drawable`) | Recurso en iOS (Asset Catalog) |
-| --- | --- | --- | --- |
-| `headphones` | Wireless Headphones | `product_headphones` | `product-headphones` |
-| `keyboard` | Mechanical Keyboard | `product_keyboard` | `product-keyboard` |
-| `smartwatch` | Smart Watch | `product_smartwatch` | `product-smartwatch` |
-| `mouse` | Gaming Mouse | `product_mouse` | `product-mouse` |
-| `speaker` | Bluetooth Speaker | `product_speaker` | `product-speaker` |
-| `backpack` | Laptop Backpack | `product_backpack` | `product-backpack` |
+| `imageKey` | Producto | Recurso (Android `res/drawable` e iOS Asset Catalog) |
+| --- | --- | --- |
+| `headphones` | Wireless Headphones | `product_headphones` |
+| `keyboard` | Mechanical Keyboard | `product_keyboard` |
+| `smartwatch` | Smart Watch | `product_smartwatch` |
+| `mouse` | Gaming Mouse | `product_mouse` |
+| `speaker` | Bluetooth Speaker | `product_speaker` |
+| `backpack` | Laptop Backpack | `product_backpack` |
 
-Los nombres de recurso son una propuesta; lo importante es que el mapeo `imageKey` → recurso viva en **un solo lugar** de cada app (un enum o un diccionario), no repartido por las pantallas.
+Las dos plataformas usan el mismo nombre en `snake_case`, que además es válido como recurso de Android. Lo importante es que el mapeo `imageKey` → recurso viva en **un solo lugar** de cada app (un enum o un diccionario), no repartido por las pantallas.
 
-- **Clave desconocida:** si llega un `imageKey` que la app no tiene, muestra una imagen genérica (`product_placeholder` / `product-placeholder`). Nunca debe fallar ni quedar vacío.
+- **Clave desconocida:** si llega un `imageKey` que la app no tiene, muestra una imagen genérica (`product_placeholder`). Nunca debe fallar ni quedar vacío.
 - **Formato:** imágenes cuadradas, en vectorial o con las densidades de cada plataforma (`@2x`, `@3x`; `mdpi`…`xxxhdpi`).
 - **Mismas claves en todas partes:** catálogo, detalle, carrito y los ítems de las órdenes (`items[].imageKey`) usan la misma clave.
-- **Automatización:** pon un identificador de accesibilidad derivado de la clave (`product-image-headphones`) para que Appium y Maestro puedan comprobar que se muestra la imagen correcta.
-- **Agotado:** con `stock` 0, superpone la etiqueta "Agotado" sobre la imagen en lugar de cambiar de recurso.
+- **Automatización:** la imagen lleva el ID `product_image_<imageKey>` (`product_image_headphones`), dentro del contenedor de su fila, para que Appium y Maestro comprueben que se muestra la imagen correcta. Ver el [catálogo de IDs](catalogo-ids-accesibilidad.md).
+- **Agotado:** con `stock` 0, superpone la etiqueta "Sold out" sobre la imagen en lugar de cambiar de recurso.
 
 ## Simulación de la compra
 
@@ -302,5 +304,5 @@ Un usuario registrado por las pruebas recibe el id 4 si se hizo un reset justo a
 - [ ] Checkout sin datos reales de tarjeta; confirmación con los importes de la respuesta
 - [ ] Manejo de cada respuesta de `POST /orders` como en el diagrama de *Simulación de la compra*
 - [ ] Montos en tipo decimal (`BigDecimal` en Kotlin, `Decimal` en Swift), nunca `Double`, formateados como USD
-- [ ] Identificadores de accesibilidad estables en los controles para Appium y Maestro
+- [ ] Identificadores de accesibilidad del [catálogo de IDs](catalogo-ids-accesibilidad.md) en todos los controles
 - [ ] En builds de prueba, forma de inyectar `X-Delay` y `X-Force-Error`
