@@ -1,4 +1,8 @@
 # Perfil para automatización de pruebas (docker compose lo usa por defecto).
-# Lo completan los changes auth-login (jwt.ttl de 15 min) y testing-profile (/test/**, ChaosFilter).
+# Lo completa el change testing-profile (/test/**, ChaosFilter).
 shop:
   profile-description: testing
+
+# Token de 15 min (§8.4): suficiente para suites largas; los tests de expiración piden un token ya expirado
+jwt:
+  ttl: 15m

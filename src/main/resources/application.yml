@@ -26,6 +26,12 @@ spring:
     deserialization:
       accept-float-as-int: false
 
+# JWT (§8.4): el secreto llega por la variable de entorno JWT_SECRET. Si falta o mide menos de 32 bytes,
+# la aplicación no arranca (JwtProperties). El TTL se puede cambiar por perfil.
+jwt:
+  secret: ${JWT_SECRET:}
+  ttl: 1h
+
 # Actuator: solo /actuator/health, sin detalles internos (specs/service-health)
 management:
   endpoints:

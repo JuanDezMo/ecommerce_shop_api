@@ -1,5 +1,6 @@
 package com.shoplab.api.health;
 
+import com.shoplab.api.support.TestJwt;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -18,7 +19,9 @@ import static org.assertj.core.api.Assertions.assertThat;
  */
 @Testcontainers
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT,
-        properties = "spring.datasource.hikari.connection-timeout=2000") // no esperar 30 s a la BD caída
+        properties = {
+                "spring.datasource.hikari.connection-timeout=2000", // no esperar 30 s a la BD caída
+                TestJwt.SECRET_PROPERTY})
 class HealthDatabaseDownIT {
 
     @Container
