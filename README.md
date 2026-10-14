@@ -4,6 +4,7 @@ API REST de práctica para automatizar pruebas móviles (Jetpack Compose y Swift
 
 - Arquitectura y reglas de negocio: [`docs/shop-backend-arquitectura.md`](docs/shop-backend-arquitectura.md) (fuente de verdad)
 - Contratos JSON para validar respuestas: [`docs/contracts/`](docs/contracts/)
+- Guía para los desarrolladores de las apps iOS y Android (endpoints por pantalla, errores, imágenes, simulación de la compra y utilidades de prueba): [`guia-integracion-ios-android.md`](guia-integracion-ios-android.md)
 - Planeación por changes: [`openspec/`](openspec/)
 
 > Backend de práctica: **nunca** lo despliegues en un entorno público con el perfil `testing`.
