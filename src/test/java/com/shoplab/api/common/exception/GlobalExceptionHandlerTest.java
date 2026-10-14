@@ -25,8 +25,10 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 /**
  * Escenarios de specs/error-handling probados contra un controller de prueba (design D4).
+ * El slice se limita a ese controller: sin esto cargaría también los controllers reales
+ * (ProductController…), que necesitan services que este test no declara.
  */
-@WebMvcTest
+@WebMvcTest(controllers = ErrorHandlingTestController.class)
 @Import({SecurityConfig.class, ErrorHandlingTestController.class})
 class GlobalExceptionHandlerTest {
 

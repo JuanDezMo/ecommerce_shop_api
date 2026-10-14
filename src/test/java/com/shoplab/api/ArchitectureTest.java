@@ -1,12 +1,18 @@
 package com.shoplab.api;
 
+import com.tngtech.archunit.base.DescribedPredicate;
+import com.tngtech.archunit.core.domain.JavaClass;
 import com.tngtech.archunit.core.importer.ImportOption;
 import com.tngtech.archunit.junit.AnalyzeClasses;
 import com.tngtech.archunit.junit.ArchTest;
 import com.tngtech.archunit.lang.ArchRule;
 import jakarta.persistence.Entity;
 
+import java.util.Optional;
+
+import static com.tngtech.archunit.lang.syntax.ArchRuleDefinition.classes;
 import static com.tngtech.archunit.lang.syntax.ArchRuleDefinition.methods;
+import static com.tngtech.archunit.lang.syntax.ArchRuleDefinition.noMethods;
 import static com.tngtech.archunit.lang.syntax.ArchRuleDefinition.noClasses;
 import static com.tngtech.archunit.library.GeneralCodingRules.NO_CLASSES_SHOULD_USE_FIELD_INJECTION;
 
@@ -64,4 +70,39 @@ class ArchitectureTest {
                     .andShould().notBeAnnotatedWith(jakarta.transaction.Transactional.class)
                     .because("las transacciones empiezan y terminan en el ServiceImpl (design D1)")
                     .allowEmptyShould(true);
+
+    // Reglas que necesitan al menos un ServiceImpl real (change product-catalog, design D6).
+    // allowEmptyShould(false): si un cambio de nombre las deja sin clases, fallan en vez de pasar en silencio.
+
+    @ArchTest
+    static final ArchRule serviceImplsAreTransactional =
+            classes().that().haveSimpleNameEndingWith("ServiceImpl")
+                    .should().beAnnotatedWith(org.springframework.transaction.annotation.Transactional.class)
+                    .because("cada ServiceImpl declara @Transactional a nivel de clase (§11, regla 2)")
+                    .allowEmptyShould(false);
+
+    @ArchTest
+    static final ArchRule serviceImplsImplementTheirServiceInterface =
+            classes().that().haveSimpleNameEndingWith("ServiceImpl")
+                    .should().implement(interfaceNamedService())
+                    .because("los controllers dependen de la interfaz del service, no de la implementación (§5)")
+                    .allowEmptyShould(false);
+
+    @ArchTest
+    static final ArchRule servicesNeverReturnOptionalOrEntities =
+            noMethods().that().arePublic()
+                    .and().areDeclaredInClassesThat().haveSimpleNameEndingWith("ServiceImpl")
+                    .should().haveRawReturnType(Optional.class)
+                    .orShould().haveRawReturnType(annotatedWithEntity())
+                    .because("el service devuelve DTOs o lanza BusinessException; nunca Optional ni entidades (bootstrap D1)")
+                    .allowEmptyShould(false);
+
+    private static DescribedPredicate<JavaClass> interfaceNamedService() {
+        return DescribedPredicate.describe("an interface whose name ends with 'Service'",
+                type -> type.isInterface() && type.getSimpleName().endsWith("Service"));
+    }
+
+    private static DescribedPredicate<JavaClass> annotatedWithEntity() {
+        return DescribedPredicate.describe("an @Entity class", type -> type.isAnnotatedWith(Entity.class));
+    }
 }
