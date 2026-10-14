@@ -74,4 +74,13 @@ public class UserServiceImpl implements UserService {
             throw new BusinessException(ErrorCode.EMAIL_ALREADY_EXISTS);
         }
     }
+
+    @Override
+    @Transactional(readOnly = true)
+    public UserResponse findCurrentUser(Long userId) {
+        // El token puede ser válido aunque su usuario ya no exista (por ejemplo, tras /test/reset): 401
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new BusinessException(ErrorCode.AUTH_TOKEN_INVALID));
+        return userMapper.toResponse(user);
+    }
 }

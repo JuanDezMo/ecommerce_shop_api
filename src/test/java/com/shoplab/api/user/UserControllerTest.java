@@ -4,9 +4,9 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.shoplab.api.common.exception.BusinessException;
 import com.shoplab.api.common.exception.ErrorCode;
-import com.shoplab.api.common.exception.GlobalExceptionHandler;
-import com.shoplab.api.security.SecurityConfig;
 import com.shoplab.api.support.ContractAssertions;
+import com.shoplab.api.support.TestTokens;
+import com.shoplab.api.support.WebMvcSecurityConfig;
 import com.shoplab.api.user.dto.RegisterUserRequest;
 import com.shoplab.api.user.dto.UserResponse;
 import org.junit.jupiter.api.Nested;
@@ -35,6 +35,7 @@ import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -42,7 +43,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
  * Capa web del registro con el service mockeado (design D5).
  */
 @WebMvcTest(UserController.class)
-@Import({SecurityConfig.class, GlobalExceptionHandler.class})
+@Import(WebMvcSecurityConfig.class)   // seguridad real (design D7 de auth-jwt-filter)
 class UserControllerTest {
 
     static final String URL = "/api/v1/users";
@@ -236,5 +237,56 @@ class UserControllerTest {
                 .andExpect(jsonPath("$.code").value("METHOD_NOT_ALLOWED"))
                 .andReturn();
         ContractAssertions.assertMatchesSchema(body(result), "error-response");
+    }
+
+    @Nested
+    class CurrentUser {
+
+        static final String ME = "/api/v1/users/me";
+        final String token = TestTokens.bearer(TestTokens.valid(4L, "ana@example.com"));
+
+        @Test
+        void validTokenReturnsTheProfileOfItsUser() throws Exception {
+            when(userService.findCurrentUser(4L)).thenReturn(CREATED);
+
+            MvcResult result = mockMvc.perform(get(ME).header("Authorization", token))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.id").value(4))
+                    .andExpect(jsonPath("$.email").value("ana@example.com"))
+                    .andReturn();
+
+            ContractAssertions.assertMatchesSchema(body(result), "user-response");
+            assertThat(body(result)).doesNotContain("password");
+            // El service recibe solo el id del token, nunca el AuthUser (§3.2)
+            verify(userService).findCurrentUser(4L);
+        }
+
+        @Test
+        void deletedUserIs401TokenInvalid() throws Exception {
+            when(userService.findCurrentUser(4L)).thenThrow(new BusinessException(ErrorCode.AUTH_TOKEN_INVALID));
+
+            MvcResult result = mockMvc.perform(get(ME).header("Authorization", token))
+                    .andExpect(status().isUnauthorized())
+                    .andExpect(jsonPath("$.code").value("AUTH_TOKEN_INVALID"))
+                    .andExpect(jsonPath("$.message").value("Authentication token is invalid"))
+                    .andReturn();
+            ContractAssertions.assertMatchesSchema(body(result), "error-response");
+        }
+
+        @Test
+        void withoutTokenIs401MissingAndTheServiceIsNotCalled() throws Exception {
+            mockMvc.perform(get(ME))
+                    .andExpect(status().isUnauthorized())
+                    .andExpect(jsonPath("$.code").value("AUTH_TOKEN_MISSING"));
+            verifyNoInteractions(userService);
+        }
+
+        @Test
+        void putWithTokenIs405() throws Exception {
+            mockMvc.perform(put(ME).header("Authorization", token)
+                            .contentType(MediaType.APPLICATION_JSON).content("{}"))
+                    .andExpect(status().isMethodNotAllowed())
+                    .andExpect(jsonPath("$.code").value("METHOD_NOT_ALLOWED"));
+        }
     }
 }

@@ -2,10 +2,9 @@ package com.shoplab.api.product;
 
 import com.shoplab.api.common.exception.BusinessException;
 import com.shoplab.api.common.exception.ErrorCode;
-import com.shoplab.api.common.exception.GlobalExceptionHandler;
 import com.shoplab.api.product.dto.ProductResponse;
-import com.shoplab.api.security.SecurityConfig;
 import com.shoplab.api.support.ContractAssertions;
+import com.shoplab.api.support.WebMvcSecurityConfig;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -37,7 +36,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
  * Capa web del catálogo con el service mockeado (design D5).
  */
 @WebMvcTest(ProductController.class)
-@Import({SecurityConfig.class, GlobalExceptionHandler.class})
+@Import(WebMvcSecurityConfig.class)   // seguridad real (design D7 de auth-jwt-filter)
 class ProductControllerTest {
 
     static final ProductResponse HEADPHONES = new ProductResponse(1L, "SL-HEAD-001", "Wireless Headphones",

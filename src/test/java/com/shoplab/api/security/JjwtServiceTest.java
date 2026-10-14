@@ -6,6 +6,10 @@ import io.jsonwebtoken.Jws;
 import io.jsonwebtoken.JwtException;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.security.Keys;
+import com.shoplab.api.common.exception.ErrorCode;
+import com.shoplab.api.support.TestJwt;
+import com.shoplab.api.support.TestTokens;
+import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 
 import javax.crypto.SecretKey;
@@ -79,5 +83,80 @@ class JjwtServiceTest {
 
         assertThatThrownBy(() -> verify(token, "another-secret-of-at-least-32-bytes!!"))
                 .isInstanceOf(JwtException.class);
+    }
+
+    /**
+     * parse (§8.2, design D2 de auth-jwt-filter). Usa el reloj real, como la aplicación,
+     * porque TestTokens emite los tokens con la hora actual.
+     */
+    @Nested
+    class Parse {
+
+        final JwtService service = new JjwtService(new JwtProperties(TestJwt.SECRET, Duration.ofHours(1)), Clock.systemUTC());
+
+        void assertRejected(String token, ErrorCode expected) {
+            assertThatThrownBy(() -> service.parse(token))
+                    .isInstanceOf(InvalidTokenException.class)
+                    .extracting(ex -> ((InvalidTokenException) ex).getErrorCode())
+                    .isEqualTo(expected);
+        }
+
+        @Test
+        void validTokenReturnsTheAuthenticatedUser() {
+            AuthUser user = service.parse(TestTokens.valid(1L, "standard@shoplab.dev"));
+
+            assertThat(user).isEqualTo(new AuthUser(1L, "standard@shoplab.dev"));
+        }
+
+        @Test
+        void notAJwtIsMalformed() {
+            assertRejected("abc.def", ErrorCode.AUTH_TOKEN_MALFORMED);
+        }
+
+        @Test
+        void otherSecretIsInvalid() {
+            assertRejected(TestTokens.signedWithOtherSecret(1L, "standard@shoplab.dev"), ErrorCode.AUTH_TOKEN_INVALID);
+        }
+
+        @Test
+        void tamperedPayloadIsInvalid() {
+            assertRejected(TestTokens.tamperedPayload(1L, "standard@shoplab.dev"), ErrorCode.AUTH_TOKEN_INVALID);
+        }
+
+        @Test
+        void unsignedTokenIsInvalid() {
+            assertRejected(TestTokens.unsigned(1L, "standard@shoplab.dev"), ErrorCode.AUTH_TOKEN_INVALID);
+        }
+
+        @Test
+        void nonNumericSubjectIsInvalid() {
+            assertRejected(TestTokens.nonNumericSubject(), ErrorCode.AUTH_TOKEN_INVALID);
+        }
+
+        @Test
+        void missingEmailIsInvalid() {
+            assertRejected(TestTokens.withoutEmail(1L), ErrorCode.AUTH_TOKEN_INVALID);
+        }
+
+        @Test
+        void expiredTokenIsExpired() {
+            assertRejected(TestTokens.expired(1L, "standard@shoplab.dev"), ErrorCode.AUTH_TOKEN_EXPIRED);
+        }
+
+        @Test
+        void expiredAndTamperedIsInvalidBecauseSignatureIsCheckedFirst() {
+            assertRejected(TestTokens.expiredAndTampered(1L, "standard@shoplab.dev"), ErrorCode.AUTH_TOKEN_INVALID);
+        }
+
+        @Test
+        void expirationUsesTheInjectedClock() {
+            // Un token "de hoy" ya está vencido para un servicio cuyo reloj va 2 horas adelantado (design D2)
+            JwtService inTwoHours = new JjwtService(new JwtProperties(TestJwt.SECRET, Duration.ofHours(1)),
+                    Clock.offset(Clock.systemUTC(), Duration.ofHours(2)));
+
+            assertThatThrownBy(() -> inTwoHours.parse(TestTokens.valid(1L, "standard@shoplab.dev")))
+                    .extracting(ex -> ((InvalidTokenException) ex).getErrorCode())
+                    .isEqualTo(ErrorCode.AUTH_TOKEN_EXPIRED);
+        }
     }
 }

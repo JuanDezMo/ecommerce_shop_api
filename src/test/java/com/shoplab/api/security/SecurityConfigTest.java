@@ -8,7 +8,8 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 class SecurityConfigTest {
 
-    private final PasswordEncoder encoder = new SecurityConfig().passwordEncoder();
+    // passwordEncoder() no usa las dependencias del filtro JWT: se pasan null
+    private final PasswordEncoder encoder = new SecurityConfig(null, null, null).passwordEncoder();
 
     @Test
     void passwordEncoderIsBcrypt() {

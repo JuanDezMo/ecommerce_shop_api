@@ -50,6 +50,17 @@ class OpenApiIT extends IntegrationTest {
     }
 
     @Test
+    void profileRouteIsDocumentedWithBearerAuth() throws Exception {
+        ResponseEntity<String> response = rest.getForEntity("/v3/api-docs", String.class);
+
+        com.fasterxml.jackson.databind.JsonNode me = new com.fasterxml.jackson.databind.ObjectMapper()
+                .readTree(response.getBody()).path("paths").path("/api/v1/users/me").path("get");
+        assertThat(me.isMissingNode()).isFalse();
+        // El candado de Swagger UI: la operación declara el esquema bearerAuth
+        assertThat(me.path("security").toString()).contains("\"bearerAuth\"");
+    }
+
+    @Test
     void swaggerUiRedirectsToTheUi() {
         ResponseEntity<String> response = rest.getForEntity("/swagger-ui.html", String.class);
 

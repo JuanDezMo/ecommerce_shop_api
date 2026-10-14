@@ -97,6 +97,16 @@ class ArchitectureTest {
                     .because("el service devuelve DTOs o lanza BusinessException; nunca Optional ni entidades (bootstrap D1)")
                     .allowEmptyShould(false);
 
+    // change auth-jwt-filter, design D6: el controller recibe AuthUser y al service solo le pasa el id (§3.2)
+    @ArchTest
+    static final ArchRule servicesDoNotKnowTheAuthenticatedPrincipal =
+            // Se excluye security: JwtService es justamente quien crea el AuthUser a partir del token
+            noClasses().that().haveNameMatching(".*(Service|ServiceImpl)")
+                    .and().resideOutsideOfPackage("com.shoplab.api.security..")
+                    .should().dependOnClassesThat().haveFullyQualifiedName("com.shoplab.api.security.AuthUser")
+                    .because("los services reciben Long userId, no el AuthUser de la seguridad (§3.2)")
+                    .allowEmptyShould(false);
+
     private static DescribedPredicate<JavaClass> interfaceNamedService() {
         return DescribedPredicate.describe("an interface whose name ends with 'Service'",
                 type -> type.isInterface() && type.getSimpleName().endsWith("Service"));

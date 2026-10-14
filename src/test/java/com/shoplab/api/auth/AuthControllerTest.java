@@ -4,9 +4,8 @@ import com.shoplab.api.auth.dto.LoginRequest;
 import com.shoplab.api.auth.dto.LoginResponse;
 import com.shoplab.api.common.exception.BusinessException;
 import com.shoplab.api.common.exception.ErrorCode;
-import com.shoplab.api.common.exception.GlobalExceptionHandler;
-import com.shoplab.api.security.SecurityConfig;
 import com.shoplab.api.support.ContractAssertions;
+import com.shoplab.api.support.WebMvcSecurityConfig;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.EnumSource;
@@ -35,7 +34,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
  * Capa web del login con el service mockeado.
  */
 @WebMvcTest(AuthController.class)
-@Import({SecurityConfig.class, GlobalExceptionHandler.class})
+@Import(WebMvcSecurityConfig.class)   // seguridad real (design D7 de auth-jwt-filter)
 class AuthControllerTest {
 
     static final String URL = "/api/v1/auth/login";

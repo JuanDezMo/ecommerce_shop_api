@@ -1,8 +1,10 @@
 package com.shoplab.api.common.exception;
 
-import com.shoplab.api.security.SecurityConfig;
 import com.shoplab.api.support.ContractAssertions;
+import com.shoplab.api.support.TestTokens;
+import com.shoplab.api.support.WebMvcSecurityConfig;
 import com.shoplab.fixtures.ErrorHandlingTestController;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -12,10 +14,13 @@ import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.MvcResult;
 import org.springframework.test.web.servlet.ResultActions;
+import org.springframework.test.web.servlet.setup.MockMvcBuilders;
+import org.springframework.web.context.WebApplicationContext;
 
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.hasSize;
 import static org.hamcrest.Matchers.not;
+import static org.springframework.security.test.web.servlet.setup.SecurityMockMvcConfigurers.springSecurity;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
@@ -27,9 +32,10 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
  * Escenarios de specs/error-handling probados contra un controller de prueba (design D4).
  * El slice se limita a ese controller: sin esto cargaría también los controllers reales
  * (ProductController…), que necesitan services que este test no declara.
+ * Las rutas /test-errors/** son protegidas: todas las peticiones llevan un token válido (design D7 de auth-jwt-filter).
  */
 @WebMvcTest(controllers = ErrorHandlingTestController.class)
-@Import({SecurityConfig.class, ErrorHandlingTestController.class})
+@Import({WebMvcSecurityConfig.class, ErrorHandlingTestController.class})
 class GlobalExceptionHandlerTest {
 
     private static final String BODY_URL = "/test-errors/body";
@@ -48,7 +54,19 @@ class GlobalExceptionHandlerTest {
             """;
 
     @Autowired
+    WebApplicationContext context;
+
     MockMvc mockMvc;
+
+    @BeforeEach
+    void setUpMockMvcWithToken() {
+        // Misma cadena de seguridad que en producción, con un token válido por defecto en cada petición
+        mockMvc = MockMvcBuilders.webAppContextSetup(context)
+                .apply(springSecurity())
+                .defaultRequest(get("/").header("Authorization",
+                        TestTokens.bearer(TestTokens.valid(1L, "standard@shoplab.dev"))))
+                .build();
+    }
 
     ResultActions postBody(String json) throws Exception {
         return mockMvc.perform(post(BODY_URL).contentType(MediaType.APPLICATION_JSON).content(json));

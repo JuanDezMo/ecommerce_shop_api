@@ -17,6 +17,7 @@ import java.time.Clock;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.time.ZoneOffset;
+import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -187,6 +188,33 @@ class UserServiceImplTest {
             when(userRepository.existsByEmail("standard@shoplab.dev")).thenReturn(true);
 
             assertRejected(NOW, request("standard@shoplab.dev", LocalDate.of(1990, 5, 20), false), ErrorCode.TERMS_NOT_ACCEPTED);
+        }
+    }
+
+    @Nested
+    class CurrentUser {
+
+        @Test
+        void existingUserIsReturned() {
+            User user = UserMapperTest.ana();
+            when(userRepository.findById(7L)).thenReturn(Optional.of(user));
+
+            UserResponse response = serviceAt(NOW).findCurrentUser(7L);
+
+            assertThat(response.id()).isEqualTo(7L);
+            assertThat(response.email()).isEqualTo("ana@example.com");
+        }
+
+        @Test
+        void missingUserMeansTheTokenIsInvalid() {
+            // El token es válido, pero su usuario ya no existe (§7.6)
+            when(userRepository.findById(99L)).thenReturn(Optional.empty());
+
+            assertThatThrownBy(() -> serviceAt(NOW).findCurrentUser(99L))
+                    .isInstanceOf(BusinessException.class)
+                    .hasMessage("Authentication token is invalid")
+                    .extracting(ex -> ((BusinessException) ex).getErrorCode())
+                    .isEqualTo(ErrorCode.AUTH_TOKEN_INVALID);
         }
     }
 }
