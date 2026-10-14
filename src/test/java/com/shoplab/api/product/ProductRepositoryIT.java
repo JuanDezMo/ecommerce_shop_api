@@ -1,8 +1,12 @@
 package com.shoplab.api.product;
 
 import com.shoplab.api.support.IntegrationTest;
+import com.shoplab.api.support.SeedData;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.jdbc.core.JdbcTemplate;
+import org.springframework.transaction.support.TransactionTemplate;
 
 import java.math.BigDecimal;
 import java.util.List;
@@ -16,6 +20,26 @@ class ProductRepositoryIT extends IntegrationTest {
 
     @Autowired
     ProductRepository productRepository;
+
+    @Autowired
+    JdbcTemplate jdbc;
+
+    @Autowired
+    TransactionTemplate transaction;
+
+    @AfterEach
+    void restoreSeed() {
+        SeedData.restoreOrdersAndStock(jdbc);
+    }
+
+    /** decreaseStock es @Modifying: necesita transacción (en producción la abre OrderServiceImpl). */
+    int decreaseStock(long productId, int quantity) {
+        return transaction.execute(status -> productRepository.decreaseStock(productId, quantity));
+    }
+
+    Integer stockOf(long productId) {
+        return jdbc.queryForObject("SELECT stock FROM products WHERE id = ?", Integer.class, productId);
+    }
 
     @Test
     void findAllByOrderByIdAscReturnsTheSixSeedProductsInOrder() {
@@ -43,5 +67,29 @@ class ProductRepositoryIT extends IntegrationTest {
 
         // 25.00 y no 25: la escala de numeric(12,2) llega intacta al BigDecimal
         assertThat(product.getPrice()).isEqualTo(new BigDecimal("25.00"));
+    }
+
+    @Test
+    void decreaseStockSubtractsWhenThereIsEnough() {
+        assertThat(decreaseStock(1L, 2)).isEqualTo(1);
+        assertThat(stockOf(1L)).isEqualTo(8);
+    }
+
+    @Test
+    void decreaseStockDoesNothingWhenThereIsNotEnough() {
+        // Producto 5: última unidad. Pedir 2 no cambia nada (design D3)
+        assertThat(decreaseStock(5L, 2)).isZero();
+        assertThat(stockOf(5L)).isEqualTo(1);
+    }
+
+    @Test
+    void decreaseStockCanTakeTheLastUnit() {
+        assertThat(decreaseStock(5L, 1)).isEqualTo(1);
+        assertThat(stockOf(5L)).isZero();
+    }
+
+    @Test
+    void decreaseStockOfUnknownProductUpdatesNothing() {
+        assertThat(decreaseStock(99L, 1)).isZero();
     }
 }

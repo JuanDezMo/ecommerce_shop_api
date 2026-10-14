@@ -61,6 +61,17 @@ class OpenApiIT extends IntegrationTest {
     }
 
     @Test
+    void orderRoutesAreDocumentedWithBearerAuth() throws Exception {
+        ResponseEntity<String> response = rest.getForEntity("/v3/api-docs", String.class);
+
+        com.fasterxml.jackson.databind.JsonNode paths = new com.fasterxml.jackson.databind.ObjectMapper()
+                .readTree(response.getBody()).path("paths");
+        assertThat(paths.path("/api/v1/orders").path("post").path("security").toString()).contains("\"bearerAuth\"");
+        assertThat(paths.path("/api/v1/orders").path("get").path("security").toString()).contains("\"bearerAuth\"");
+        assertThat(paths.path("/api/v1/orders/{id}").path("get").path("security").toString()).contains("\"bearerAuth\"");
+    }
+
+    @Test
     void swaggerUiRedirectsToTheUi() {
         ResponseEntity<String> response = rest.getForEntity("/swagger-ui.html", String.class);
 

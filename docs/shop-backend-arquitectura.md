@@ -457,8 +457,8 @@ Base: `/api/v1`
 | GET | `/products/{id}` | Pública | 200 | 404 |
 | GET | `/users/me` | JWT | 200 | 401 (incluye usuario del token que ya no existe) |
 | POST | `/orders` | JWT | 201 | 400 validación / orden vacía / producto repetido, 401, 404 producto, 409 stock insuficiente |
-| GET | `/orders` | JWT | 200 | 401 |
-| GET | `/orders/{id}` | JWT | 200 | 400 id no numérico, 401, 404 (no existe o es de otro usuario) |
+| GET | `/orders` | JWT | 200 | 401 (incluye usuario del token que ya no existe) |
+| GET | `/orders/{id}` | JWT | 200 | 400 id no numérico, 401 (incluye usuario del token que ya no existe), 404 (no existe o es de otro usuario) |
 | GET | `/actuator/health` (fuera de `/api/v1`) | Pública | 200 `{"status":"UP"}` | — |
 
 Además, cualquier endpoint con body puede devolver 400 (JSON mal formado) y 415 (`Content-Type` distinto de `application/json`). Ver §7.6.
@@ -702,7 +702,7 @@ Solo `phone` puede ser `null`. **Nunca** incluye `password` ni `passwordHash`.
 | `"items": [null]` | 400 | `VALIDATION_ERROR` | `[{"field":"items[0]","message":"must not be null"}]` |
 | `"items": []` | 400 | `EMPTY_ORDER` | `[]` |
 | Campos desconocidos en el body (`"foo": 1`) | Se ignoran | — | — |
-| `GET /users/me` o `POST /orders` con un token cuyo usuario ya no existe | 401 | `AUTH_TOKEN_INVALID` | `[]` |
+| `GET /users/me`, `POST /orders`, `GET /orders` o `GET /orders/{id}` con un token cuyo usuario ya no existe | 401 | `AUTH_TOKEN_INVALID` | `[]` |
 | `POST /test/tokens/expired` con un email que no existe | 404 | `USER_NOT_FOUND` | `[]` |
 | `POST /test/tokens/expired` sin email o con email en blanco | 400 | `VALIDATION_ERROR` | `[{"field":"email","message":"must not be blank"}]` |
 | `X-Delay` no numérico o negativo | Se ignora el header | — | — |
