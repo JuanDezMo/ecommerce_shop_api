@@ -1,0 +1,12 @@
+{
+  "$schema": "http://json-schema.org/draft-04/schema#",
+  "title": "ExpiredTokenResponse",
+  "description": "POST /api/v1/test/tokens/expired (solo perfil testing): token ya expirado. Sin expiresIn porque no le queda vida.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["accessToken", "tokenType"],
+  "properties": {
+    "accessToken": { "type": "string", "pattern": "^[A-Za-z0-9_-]+\\.[A-Za-z0-9_-]+\\.[A-Za-z0-9_-]+$" },
+    "tokenType": { "type": "string", "enum": ["Bearer"] }
+  }
+}

@@ -39,4 +39,29 @@ class ContractAssertionsTest {
         assertThatThrownBy(() -> ContractAssertions.assertMatchesSchema(VALID_ERROR, "does-not-exist"))
                 .isInstanceOf(IllegalArgumentException.class);
     }
+
+    // Contrato de POST /api/v1/test/tokens/expired (change testing-profile)
+
+    @Test
+    void expiredTokenResponseMatchesItsContract() {
+        assertThatCode(() -> ContractAssertions.assertMatchesSchema(
+                "{\"accessToken\":\"a.b.c\",\"tokenType\":\"Bearer\"}", "expired-token-response"))
+                .doesNotThrowAnyException();
+    }
+
+    @Test
+    void expiredTokenResponseRejectsExpiresIn() {
+        // Un token expirado no tiene vida restante: expiresIn no forma parte del contrato
+        assertThatThrownBy(() -> ContractAssertions.assertMatchesSchema(
+                "{\"accessToken\":\"a.b.c\",\"tokenType\":\"Bearer\",\"expiresIn\":0}", "expired-token-response"))
+                .isInstanceOf(AssertionError.class)
+                .hasMessageContaining("expiresIn");
+    }
+
+    @Test
+    void expiredTokenResponseOnlyAcceptsBearer() {
+        assertThatThrownBy(() -> ContractAssertions.assertMatchesSchema(
+                "{\"accessToken\":\"a.b.c\",\"tokenType\":\"Basic\"}", "expired-token-response"))
+                .isInstanceOf(AssertionError.class);
+    }
 }

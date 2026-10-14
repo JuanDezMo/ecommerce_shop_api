@@ -116,7 +116,8 @@ Controller  →  Service (interfaz)  →  Repository  →  Entity
   Así `UserService` no tiene que exponer el hash.
   Es una **concesión consciente** para mantenerlo simple: acopla un poco las features, pero solo en lectura
   y solo en estos casos: `AuthServiceImpl` → `UserRepository`, `OrderServiceImpl` → `ProductRepository`
-  y `UserRepository` (para verificar que el usuario del token existe), `TestSupportController` → `UserRepository`.
+  y `UserRepository` (para verificar que el usuario del token existe), `ExpiredTokenFactory` → `UserRepository`
+  (perfil `testing`; el controller no puede usar repositories, lo verifica `ArchitectureTest`).
 
 ### 3.4 Validación vs. regla de negocio
 
@@ -598,6 +599,7 @@ given().get("/api/v1/products/1")
 | `GET /products/{id}` | 200 | `product-response.schema.json` |
 | `POST /orders`, `GET /orders/{id}` | 201 / 200 | `order-response.schema.json` |
 | `GET /orders` | 200 | `order-list.schema.json` |
+| `POST /test/tokens/expired` (solo perfil `testing`) | 200 | `expired-token-response.schema.json` |
 | Cualquier error | 4xx / 5xx | `error-response.schema.json` |
 
 Formatos comunes:

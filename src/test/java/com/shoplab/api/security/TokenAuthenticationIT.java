@@ -184,4 +184,15 @@ class TokenAuthenticationIT extends IntegrationTest {
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.NOT_FOUND);
         assertThat(json(response).get("code").asText()).isEqualTo("NOT_FOUND");
     }
+
+    @Test
+    void chaosHeadersAreIgnoredWithoutTestingProfile() {
+        // specs/testing-support: sin el perfil testing no hay ChaosFilter
+        HttpHeaders headers = new HttpHeaders();
+        headers.set("X-Force-Error", "500");
+
+        ResponseEntity<String> response = rest.exchange("/api/v1/products", HttpMethod.GET, new HttpEntity<>(headers), String.class);
+
+        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
+    }
 }

@@ -12,19 +12,26 @@ import java.time.Instant;
 import java.util.List;
 
 /**
- * Escribe un ErrorResponse desde la cadena de seguridad, donde el GlobalExceptionHandler no llega (§8.2).
- * Lo usan el entry point (401) y el access denied handler (403).
+ * Escribe un ErrorResponse desde un filtro, donde el GlobalExceptionHandler no llega (§8.2).
+ * Lo usan el entry point (401), el access denied handler (403) y el ChaosFilter del perfil testing.
  */
-final class ErrorResponseWriter {
+public final class ErrorResponseWriter {
 
     private ErrorResponseWriter() {
     }
 
-    static void write(HttpServletResponse response, ObjectMapper objectMapper, ErrorCode code,
-                      HttpServletRequest request) throws IOException {
-        ErrorResponse body = new ErrorResponse(Instant.now(), code.getStatus().value(), code.name(),
+    /** Usa el status del ErrorCode. */
+    public static void write(HttpServletResponse response, ObjectMapper objectMapper, ErrorCode code,
+                             HttpServletRequest request) throws IOException {
+        write(response, objectMapper, code, code.getStatus().value(), request);
+    }
+
+    /** Status explícito: FORCED_ERROR se declara con 500 pero responde el de la cabecera X-Force-Error (§9.1). */
+    public static void write(HttpServletResponse response, ObjectMapper objectMapper, ErrorCode code, int status,
+                             HttpServletRequest request) throws IOException {
+        ErrorResponse body = new ErrorResponse(Instant.now(), status, code.name(),
                 code.getMessage(), request.getRequestURI(), List.of());
-        response.setStatus(code.getStatus().value());
+        response.setStatus(status);
         response.setContentType(MediaType.APPLICATION_JSON_VALUE);
         response.setCharacterEncoding("UTF-8");
         objectMapper.writeValue(response.getOutputStream(), body);
