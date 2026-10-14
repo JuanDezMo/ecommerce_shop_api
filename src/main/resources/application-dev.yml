@@ -1,0 +1,11 @@
+# Desarrollo local: la API corre en el IDE y PostgreSQL en Docker (docker compose up db)
+spring:
+  datasource:
+    url: jdbc:postgresql://localhost:5432/shop
+    username: shop
+    password: ${DB_PASSWORD:cambia_esto}
+  jpa:
+    show-sql: true
+
+shop:
+  profile-description: dev

@@ -1,0 +1,36 @@
+{
+  "$schema": "http://json-schema.org/draft-04/schema#",
+  "title": "ErrorResponse",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["timestamp", "status", "code", "message", "path", "fieldErrors"],
+  "properties": {
+    "timestamp": { "type": "string", "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}(\\.\\d{1,9})?Z$" },
+    "status": { "type": "integer", "minimum": 400, "maximum": 599 },
+    "code": {
+      "type": "string",
+      "enum": [
+        "VALIDATION_ERROR", "INVALID_CREDENTIALS", "USER_LOCKED", "EMAIL_ALREADY_EXISTS",
+        "UNDERAGE_USER", "TERMS_NOT_ACCEPTED", "PRODUCT_NOT_FOUND", "INSUFFICIENT_STOCK",
+        "EMPTY_ORDER", "DUPLICATE_ORDER_ITEM", "ORDER_NOT_FOUND", "USER_NOT_FOUND",
+        "AUTH_TOKEN_MISSING", "AUTH_TOKEN_MALFORMED", "AUTH_TOKEN_INVALID", "AUTH_TOKEN_EXPIRED",
+        "ACCESS_DENIED", "NOT_FOUND", "METHOD_NOT_ALLOWED", "UNSUPPORTED_MEDIA_TYPE",
+        "INTERNAL_ERROR", "FORCED_ERROR"
+      ]
+    },
+    "message": { "type": "string", "minLength": 1 },
+    "path": { "type": "string", "pattern": "^/" },
+    "fieldErrors": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["field", "message"],
+        "properties": {
+          "field": { "type": "string", "minLength": 1 },
+          "message": { "type": "string", "minLength": 1 }
+        }
+      }
+    }
+  }
+}

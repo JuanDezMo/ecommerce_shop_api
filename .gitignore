@@ -1,0 +1,13 @@
+# Gradle
+build/
+.gradle/
+!gradle/wrapper/gradle-wrapper.jar
+
+# Secretos locales (usar .env.example como plantilla)
+.env
+
+# IDE y sistema operativo
+.idea/
+*.iml
+.vscode/
+.DS_Store

@@ -1,0 +1,49 @@
+schema: spec-driven
+
+context: |
+  Escribe todos los artefactos de OpenSpec en español.
+  Idioma: código (clases, métodos, variables, endpoints, ErrorCode) y mensajes de la API en inglés; comentarios del código y documentación en español.
+  Moneda única: USD (montos en BigDecimal / numeric(12,2)).
+  Fuente de verdad de arquitectura: docs/shop-backend-arquitectura.md (consultarla antes de proponer cambios).
+  Stack: Java 21, Spring Boot 3.x, PostgreSQL 16, Flyway, Gradle (Kotlin DSL + wrapper), Docker Compose.
+  Paquetes por feature (auth, user, product, order, security, common, testsupport) bajo com.shoplab.api.
+  Capas: Controller -> Service (interfaz) <- ServiceImpl -> Repository -> Entity; los controllers nunca usan repositories y las entidades nunca salen del service.
+  Errores siempre con el formato ErrorResponse y un ErrorCode explícito (con HttpStatus y mensaje); cada error nuevo se agrega a ErrorCode y a docs/contracts/error-response.schema.json.
+  Contratos JSON (draft-04) en docs/contracts/: todo cambio en un DTO de respuesta actualiza su esquema.
+  Público objetivo: perfil junior; priorizar código simple y legible sobre abstracciones.
+  Desarrollo TDD: test que falla -> código mínimo -> refactor.
+
+rules:
+  tasks:
+    - Cada tarea de implementación empieza por su test (unitario, @WebMvcTest o Testcontainers según la capa)
+
+# Project context (optional)
+# Add only constraints that should guide OpenSpec artifacts and workflows.
+# Include constraints an agent cannot infer by reading the code.
+# Keep general project documentation and discoverable codebase facts out.
+# Example:
+#   context: |
+#     Designs and tasks must cover Windows, macOS, and Linux
+#     Write all artifacts in Spanish
+
+# Per-artifact rules (optional)
+# Add custom rules for specific artifacts.
+# Example:
+#   rules:
+#     proposal:
+#       - Keep proposals under 500 words
+#       - Always state what is out of scope
+#     tasks:
+#       - Break tasks into chunks of max 2 hours
+
+# Per-operation guidance (optional)
+# Add advisory guidance for how apply and archive work should be conducted.
+# This is separate from artifact rules above.
+# Example:
+#   operations:
+#     apply:
+#       guidance:
+#         - Keep test summaries concise
+#     archive:
+#       guidance:
+#         - Summarize the archive outcome before finishing
