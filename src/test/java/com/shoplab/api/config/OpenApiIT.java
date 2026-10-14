@@ -36,6 +36,13 @@ class OpenApiIT extends IntegrationTest {
     }
 
     @Test
+    void apiDocsListTheRegistrationRoute() {
+        ResponseEntity<String> response = rest.getForEntity("/v3/api-docs", String.class);
+
+        assertThat(response.getBody()).contains("\"/api/v1/users\"");
+    }
+
+    @Test
     void swaggerUiRedirectsToTheUi() {
         ResponseEntity<String> response = rest.getForEntity("/swagger-ui.html", String.class);
 
