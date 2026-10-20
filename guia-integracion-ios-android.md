@@ -33,7 +33,7 @@ La app obtiene un token con el login y lo envía en cada ruta protegida como `Au
 
 - **Duración:** `expiresIn` en segundos. 900 (15 min) con el perfil `testing`, 3600 (1 h) en los demás.
 - **Contenido del JWT (HS256):** `sub` (id del usuario), `email`, `iat`, `exp`. La app no necesita decodificarlo: el perfil se pide a `/users/me`.
-- **Sin sesión en el servidor:** no hay cookies. Lo recomendable es guardar el token en el almacenamiento seguro (Keychain en iOS, EncryptedSharedPreferences o DataStore cifrado en Android). En su primera fase, la app iOS lo mantiene solo en memoria: al cerrarla hay que volver a iniciar sesión.
+- **Sin sesión en el servidor:** no hay cookies. Lo recomendable es guardar el token en el almacenamiento seguro (Keychain en iOS; en Android, Android Keystore con Tink, ya que `EncryptedSharedPreferences` está obsoleta desde `security-crypto` 1.1.0-alpha07). En su primera fase, la app iOS lo mantiene solo en memoria: al cerrarla hay que volver a iniciar sesión.
 - **Logout:** solo local (borrar el token). El servidor no revoca tokens.
 
 | Rutas | Token |
